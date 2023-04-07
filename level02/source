@@ -1,0 +1,73 @@
+int main(void)
+{
+  int iVar1;
+  size_t sVar2;
+  long lVar3;
+  undefined8 *puVar4;
+  undefined8 password [14];
+  undefined8 flag [6];
+  undefined8 username [12];
+  int FlagSize;
+  FILE *local_10;
+
+  puVar4 = username;
+  for (lVar3 = 0xc; lVar3 != 0; lVar3 = lVar3 + -1) {
+    *puVar4 = 0;
+    puVar4 = puVar4 + 1;
+  }
+  *(undefined4 *)puVar4 = 0;
+  puVar4 = flag;
+  for (lVar3 = 5; lVar3 != 0; lVar3 = lVar3 + -1) {
+    *puVar4 = 0;
+    puVar4 = puVar4 + 1;
+  }
+  *(undefined *)puVar4 = 0;
+  puVar4 = password;
+  for (lVar3 = 0xc; lVar3 != 0; lVar3 = lVar3 + -1) {
+    *puVar4 = 0;
+    puVar4 = puVar4 + 1;
+  }
+  *(undefined4 *)puVar4 = 0;
+  local_10 = (FILE *)0x0;
+  FlagSize = 0;
+  local_10 = fopen("/home/users/level03/.pass","r");
+  if (local_10 == (FILE *)0x0) {
+    fwrite("ERROR: failed to open password file\n",1,0x24,stderr);
+                    /* WARNING: Subroutine does not return */
+    exit(1);
+  }
+  sVar2 = fread(flag,1,41,local_10);
+  FlagSize = (int)sVar2;
+  sVar2 = strcspn((char *)flag,"\n");
+  *(undefined *)((long)flag + sVar2) = 0;
+  if (FlagSize != 0x29) {
+    fwrite("ERROR: failed to read password file\n",1,0x24,stderr);
+    fwrite("ERROR: failed to read password file\n",1,0x24,stderr);
+                    /* WARNING: Subroutine does not return */
+    exit(1);
+  }
+  fclose(local_10);
+  puts("===== [ Secure Access System v1.0 ] =====");
+  puts("/***************************************\\");
+  puts("| You must login to access this system. |");
+  puts("\\**************************************/");
+  printf("--[ Username: ");
+  fgets((char *)username,100,stdin);
+  sVar2 = strcspn((char *)username,"\n");
+  *(undefined *)((long)username + sVar2) = 0;
+  printf("--[ Password: ");
+  fgets((char *)password,100,stdin);
+  sVar2 = strcspn((char *)password,"\n");
+  *(undefined *)((long)password + sVar2) = 0;
+  puts("*****************************************");
+  iVar1 = strncmp((char *)flag,(char *)password,41);
+  if (iVar1 == 0) {
+    printf("Greetings, %s!\n",username);
+    system("/bin/sh");
+    return 0;
+  }
+  printf((char *)username);
+  puts(" does not have access!");
+                    /* WARNING: Subroutine does not return */
+  exit(1);
+}

