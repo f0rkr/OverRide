@@ -1,0 +1,37 @@
+Authenticating as level02/PwBLgNa8p8MTKW57S7zxVAQCxnCpV8JqTTs9XEBv
+
+We come across a suid binary named level03.
+
+After analysing the binary we find that reads password from stdin and then pass it to as parameter to another function
+with another parameter (0x1337d00d)
+
+Note the password is in integer format as proved here:
+   0x080488b1 <+87>:	mov    eax,0x8048a85 <-----
+   0x080488b6 <+92>:	lea    edx,[esp+0x1c]
+   0x080488ba <+96>:	mov    DWORD PTR [esp+0x4],edx
+   0x080488be <+100>:	mov    DWORD PTR [esp],eax
+   0x080488c1 <+103>:	call   0x8048530 <__isoc99_scanf@plt>
+  (gdb) x/s 0x8048a85
+   0x8048a85:	 "%d"
+
+After the program read the password, then calls for test@ptl function and pass it two parameters (password, 0x1337d00d)
+
+And in the called function test@ptl what it does is subtracting the second parameter form the password and
+launch switch case to run the decrypt function with the result of subtraction.
+
+What I did here is to find the exact ctx number (EVP) that allow us to execute /bin/sh in the decrypt function, so the way i did that
+is by solving the subtraction to match one of the switch cases and it did for 0x12(18) by entering the number 322424827 ( 1337CFFB ) as password
+
+level03@OverRide:~$ ./level03
+***********************************
+*		level03		**
+***********************************
+Password:322424827
+$ whoami
+level04
+$ cd /home/users/level04
+$ cat .pass
+kgv3tkEb9h2mLkRsPkXRfc2mHbjMxQzvb2FrgKkf
+$
+
+And Here it is, the password for level04.
