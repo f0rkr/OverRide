@@ -1,6 +1,6 @@
 Authenticating as level05/3v8QLcN5SAhPaZZfEasfmXdwyR59ktDEMAwHF3aN
 
-We come across a suid binary named level04.
+We come across a suid binary named level05.
 
 As it seems the binary is vulnerable to format string. We will try to overwrite the address of exit int The got to shellcode
 address. to spawn a shell.
