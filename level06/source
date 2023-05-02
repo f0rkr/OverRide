@@ -1,0 +1,69 @@
+int auth(char *login,uint serial)
+{
+    size_t size;
+    int ret;
+    long traceInt;
+    int i;
+    uint dupSerial;
+
+    size = strcspn(login,"\n");
+    login[sVar1] = '\0';
+    sVar1 = strnlen(login,32);
+    if ((int)sVar1 < 6) {
+        ret = 1;
+    }
+    else {
+        traceInt = ptrace(PTRACE_TRACEME);
+        if (traceInt == -1) {
+            puts("\x1b[32m.---------------------------.");
+            puts("\x1b[31m| !! TAMPERING DETECTED !!  |");
+            puts("\x1b[32m\'---------------------------\'");
+            ret = 1;
+        }
+        else {
+            dupSerial = ((int)login[3] ^ 4919) + 6221293;
+            for (i = 0; i < (int)size; i = i + 1) {
+                if (login[i] < ' ') {
+                    return 1;
+                }
+                dupSerial = dupSerial + ((int)login[i] ^ dupSerial) % 1337;
+            }
+            if (serial == dupSerial) {
+                ret = 0;
+            }
+            else {
+                ret = 1;
+            }
+        }
+    }
+    return ret;
+}
+
+bool main(void)
+{
+  int iVar1;
+  int in_GS_OFFSET;
+  char local_34 [32];
+  int local_14;
+
+  local_14 = *(int *)(in_GS_OFFSET + 20);
+  puts("***********************************");
+  puts("*\t\tlevel06\t\t  *");
+  puts("***********************************");
+  printf("-> Enter Login: ");
+  fgets(local_34,32,stdin);
+  puts("***********************************");
+  puts("***** NEW ACCOUNT DETECTED ********");
+  puts("***********************************");
+  printf("-> Enter Serial: ");
+  __isoc99_scanf();
+  iVar1 = auth();
+  if (iVar1 == 0) {
+    puts("Authenticated!");
+    system("/bin/sh");
+  }
+  if (local_14 != *(int *)(in_GS_OFFSET + 0x14)) {
+    __stack_chk_fail();
+  }
+  return iVar1 != 0;
+}

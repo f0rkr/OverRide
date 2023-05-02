@@ -1,0 +1,53 @@
+Authenticating as level06/h4GtNnaMs2kZFN92ymTr2DcJHAzMfzLW25Ep59mq
+
+We come across a suid binary named level06.
+
+After analyzing it, it seems that its running some kind of authentication
+
+It's taking a login and then perfume some arithmetic operations with it and then check if the serial number
+equal to the result of the operations.
+
+So what we have to do is to debug the binary and give it random 6 characters, get the results of operations and enter it
+as serial number
+
+Bypassing ptrace
+
+(gdb) catch syscall ptrace
+Catchpoint 1 (syscall 'ptrace' [26])
+(gdb) commands 1
+Type commands for breakpoint(s) 1, one per line.
+End with a line saying just "end".
+>set ($eax) = 0
+>continue
+>end
+
+=> 0x08048866 <+286>:	cmp    eax,DWORD PTR [ebp-0x10]
+   0x08048869 <+289>:	je     0x8048872 <auth+298>
+   0x0804886b <+291>:	mov    eax,0x1
+   0x08048870 <+296>:	jmp    0x8048877 <auth+303>
+   0x08048872 <+298>:	mov    eax,0x0
+   0x08048877 <+303>:	leave
+   0x08048878 <+304>:	ret
+End of assembler dump.
+(gdb) print $ebp-0x10
+$1 = (void *) 0xffffd678
+(gdb) x/d 0xffffd678
+0xffffd678:	6232802
+
+level06@OverRide:~$ ./level06
+***********************************
+*		level06		  *
+***********************************
+-> Enter Login: abcdef
+***********************************
+***** NEW ACCOUNT DETECTED ********
+***********************************
+-> Enter Serial: 6232802
+Authenticated!
+$ whoami
+level07
+$ cat /home/users/level07/.pass
+GbcPDRgsFK77LNnnuh7QyFYA2942Gp8yKj9KrWD8
+$
+
+And Here it is, the password for level07.
