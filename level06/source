@@ -42,11 +42,9 @@ int auth(char *login,uint serial)
 bool main(void)
 {
   int iVar1;
-  int in_GS_OFFSET;
   char local_34 [32];
   int local_14;
 
-  local_14 = *(int *)(in_GS_OFFSET + 20);
   puts("***********************************");
   puts("*\t\tlevel06\t\t  *");
   puts("***********************************");
@@ -61,9 +59,6 @@ bool main(void)
   if (iVar1 == 0) {
     puts("Authenticated!");
     system("/bin/sh");
-  }
-  if (local_14 != *(int *)(in_GS_OFFSET + 0x14)) {
-    __stack_chk_fail();
   }
   return iVar1 != 0;
 }
