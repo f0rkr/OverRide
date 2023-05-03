@@ -36,6 +36,9 @@ $1 = (void *) 0xffffd678
 (gdb) x/d 0xffffd678
 0xffffd678:	6232802
 
+As we see the generated serial number is 6232802, All we have to do now is the feed it with the initial login
+that we used before. And we will get access.
+
 level06@OverRide:~$ ./level06
 ***********************************
 *		level06		  *
