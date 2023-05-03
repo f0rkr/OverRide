@@ -21,6 +21,8 @@ End with a line saying just "end".
 >continue
 >end
 
+And Now break where the binary compares both the serial number and the generated serial number.
+
 => 0x08048866 <+286>:	cmp    eax,DWORD PTR [ebp-0x10]
    0x08048869 <+289>:	je     0x8048872 <auth+298>
    0x0804886b <+291>:	mov    eax,0x1
