@@ -1,6 +1,6 @@
 Authenticating as level02/PwBLgNa8p8MTKW57S7zxVAQCxnCpV8JqTTs9XEBv
 
-We come across a suid binary named level01.
+We come across a suid binary named level02.
 
 The program seems to be asking for a username and password. After analysing the binary I found that it does call fopen and fread to reads
 the flag for the next level and store in a variable that is compared later on with the password. And if the comparison is not true then
